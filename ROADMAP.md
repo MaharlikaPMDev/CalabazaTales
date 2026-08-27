@@ -1,5 +1,13 @@
 # CalabazaTales Roadmap
 
+## TODO — SAO-style client HUD (future session)
+
+- Prototype an optional client-side Java mod (Fabric/NeoForge decision pending) for the animated Sword Art Online-style health, armor, target HP, level, XP, and Dragon Seed HUD.
+- Keep the mod server-optional: it must connect to Pumpkin without requiring server-side mod installation, using plugin-provided packets/scoreboard or boss-bar data where available.
+- Define a versioned bridge protocol between the CalabazaTales WASM plugin and the client mod, with a vanilla/resource-pack fallback when the mod is absent.
+- Verify compatibility against Minecraft Java 26.2 and document the exact loader/API requirements.
+- Do not promise equivalent arbitrary HUD overlays for Bedrock; maintain the Bedrock forms/resource-pack experience unless a supported Bedrock scripting/UI path is added later.
+
 ## 0.2 — Combat identity
 
 - Weapon classes, active skills, cooldowns, mana, and configurable damage formulas.
@@ -30,4 +38,3 @@
 - Database adapters, migration/versioning tools, backups, and multi-server synchronization.
 - Performance profiling under large player counts and hostile-mob volumes.
 - Admin web dashboard, audit logs, localization, accessibility review, and automated compatibility testing for supported Java/Bedrock releases.
-
