@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Calabaza Tales MMORPG HUD",
+    "description": "Original medieval anime-fantasy health, armor, and target HUD for Calabaza Tales",
+    "uuid": "d1b80eca-85a3-4f1c-b82a-52b6145abc58",
+    "version": [0, 1, 0],
+    "min_engine_version": [1, 21, 0]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "aa511cf7-400e-4efa-9611-eb8f20ddb36e",
+      "version": [0, 1, 0]
+    }
+  ]
+}
+

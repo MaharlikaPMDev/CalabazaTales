@@ -1,0 +1,24 @@
+# Merge these sections into your Pumpkin server's pumpkin.toml.
+
+[resource_pack.java]
+enabled = true
+url = "https://github.com/MaharlikaPMDev/CalabazaTales/releases/download/v0.1.0/CalabazaTales-Java-26.2-v0.1.0.zip"
+sha1 = "b386b239876b2de9678a44c47ccb956162044c0f"
+prompt_message = "Calabaza Tales MMORPG interface"
+force = false
+
+[resource_pack.bedrock]
+enabled = true
+force = false
+
+[[resource_pack.bedrock.packs]]
+uuid = "d1b80eca-85a3-4f1c-b82a-52b6145abc58"
+version = "0.1.0"
+size = 8804
+download_url = "https://github.com/MaharlikaPMDev/CalabazaTales/releases/download/v0.1.0/CalabazaTales-Bedrock-v0.1.0.mcpack"
+content_key = ""
+sub_pack_name = ""
+content_id = ""
+has_scripts = false
+addon_pack = false
+rtx_enabled = false

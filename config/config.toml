@@ -1,0 +1,29 @@
+[progression]
+base_xp = 100
+growth = 1.35
+max_level = 100
+attribute_points_per_level = 3
+
+[attributes]
+damage_per_point = 0.025
+defense_per_point = 0.020
+speed_per_point = 0.005
+health_per_point = 1.0
+max_damage_bonus = 1.50
+max_defense_reduction = 0.75
+max_walk_speed = 0.35
+
+[currency]
+name = "Dragon Seed"
+symbol = "Ds"
+
+[quests]
+max_active = 5
+menu_title = "Calabaza Tales • Quest Journal"
+attributes_title = "Calabaza Tales • Attributes"
+
+[target_hud]
+enabled = true
+max_distance = 12.0
+show_armor = true
+

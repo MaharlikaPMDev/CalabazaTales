@@ -1,0 +1,31 @@
+# Add any number of axis-aligned cuboids. Coordinates are inclusive.
+# The world value is Pumpkin's world id (normally "minecraft:overworld").
+
+[[zones]]
+id = "spawn"
+display_name = "King's Landing"
+world = "minecraft:overworld"
+min_x = -64
+max_x = 64
+min_y = -64
+max_y = 320
+min_z = -64
+max_z = 64
+block_break = true
+block_place = true
+pvp = true
+
+[[zones]]
+id = "market"
+display_name = "Dragonseed Market"
+world = "minecraft:overworld"
+min_x = 80
+max_x = 128
+min_y = -64
+max_y = 320
+min_z = -32
+max_z = 32
+block_break = true
+block_place = true
+pvp = true
+

@@ -1,0 +1,552 @@
+# CalabazaTales quest catalogue. Edit this file, then run /tales reload.
+# Objective kinds: mine, collect, kill. Targets use namespaced Minecraft IDs.
+
+[[quests]]
+id = "q01"
+title = "First Chips"
+description = "Mine your first stone for the masons."
+difficulty = "Novice"
+required_level = 1
+reward_xp = 90
+reward_ds = 15
+objective = { kind = "mine", target = "minecraft:stone", amount = 32 }
+
+[[quests]]
+id = "q02"
+title = "Coal for the Watch"
+description = "Gather fuel for the night watch."
+difficulty = "Novice"
+required_level = 2
+prerequisite = "q01"
+reward_xp = 140
+reward_ds = 20
+objective = { kind = "mine", target = "minecraft:coal_ore", amount = 24 }
+
+[[quests]]
+id = "q03"
+title = "Oakbound Supplies"
+description = "Collect sturdy oak logs for the palisade."
+difficulty = "Novice"
+required_level = 4
+prerequisite = "q02"
+reward_xp = 210
+reward_ds = 35
+objective = { kind = "collect", target = "minecraft:oak_log", amount = 48 }
+
+[[quests]]
+id = "q04"
+title = "Fields of Bread"
+description = "Collect wheat for the village kitchens."
+difficulty = "Novice"
+required_level = 6
+prerequisite = "q03"
+reward_xp = 300
+reward_ds = 55
+objective = { kind = "collect", target = "minecraft:wheat", amount = 64 }
+
+[[quests]]
+id = "q05"
+title = "Webs in the Cellar"
+description = "Defeat spiders beneath the old inn."
+difficulty = "Novice"
+required_level = 8
+prerequisite = "q04"
+reward_xp = 430
+reward_ds = 75
+objective = { kind = "kill", target = "minecraft:spider", amount = 12 }
+
+[[quests]]
+id = "q06"
+title = "Iron Promise"
+description = "Mine iron for your first proper armament."
+difficulty = "Apprentice"
+required_level = 10
+prerequisite = "q05"
+reward_xp = 580
+reward_ds = 105
+objective = { kind = "mine", target = "minecraft:iron_ore", amount = 40 }
+
+[[quests]]
+id = "q07"
+title = "Rot at the Gate"
+description = "Drive zombies away from the eastern road."
+difficulty = "Apprentice"
+required_level = 11
+prerequisite = "q06"
+reward_xp = 770
+reward_ds = 140
+objective = { kind = "kill", target = "minecraft:zombie", amount = 25 }
+
+[[quests]]
+id = "q08"
+title = "Fletcher's Contract"
+description = "Collect feathers for the royal fletcher."
+difficulty = "Apprentice"
+required_level = 13
+prerequisite = "q07"
+reward_xp = 980
+reward_ds = 180
+objective = { kind = "collect", target = "minecraft:feather", amount = 32 }
+
+[[quests]]
+id = "q09"
+title = "Copper Courier"
+description = "Mine copper for the signal towers."
+difficulty = "Apprentice"
+required_level = 15
+prerequisite = "q08"
+reward_xp = 1210
+reward_ds = 225
+objective = { kind = "mine", target = "minecraft:copper_ore", amount = 72 }
+
+[[quests]]
+id = "q10"
+title = "Bone Moon"
+description = "Thin the skeleton patrols after dusk."
+difficulty = "Apprentice"
+required_level = 17
+prerequisite = "q09"
+reward_xp = 1480
+reward_ds = 270
+objective = { kind = "kill", target = "minecraft:skeleton", amount = 35 }
+
+[[quests]]
+id = "q11"
+title = "Deep Roads"
+description = "Carve through deepslate below the kingdom."
+difficulty = "Journeyman"
+required_level = 19
+prerequisite = "q10"
+reward_xp = 1770
+reward_ds = 325
+objective = { kind = "mine", target = "minecraft:deepslate", amount = 192 }
+
+[[quests]]
+id = "q12"
+title = "Redstone Whisper"
+description = "Mine redstone for the artificers."
+difficulty = "Journeyman"
+required_level = 20
+prerequisite = "q11"
+reward_xp = 2100
+reward_ds = 385
+objective = { kind = "mine", target = "minecraft:redstone_ore", amount = 48 }
+
+[[quests]]
+id = "q13"
+title = "Pearls of Passage"
+description = "Collect ender pearls for the court mage."
+difficulty = "Journeyman"
+required_level = 22
+prerequisite = "q12"
+reward_xp = 2450
+reward_ds = 450
+objective = { kind = "collect", target = "minecraft:ender_pearl", amount = 12 }
+
+[[quests]]
+id = "q14"
+title = "Creeper Tax"
+description = "Defeat creepers threatening the farms."
+difficulty = "Journeyman"
+required_level = 24
+prerequisite = "q13"
+reward_xp = 2820
+reward_ds = 520
+objective = { kind = "kill", target = "minecraft:creeper", amount = 45 }
+
+[[quests]]
+id = "q15"
+title = "Golden Standard"
+description = "Mine gold for the guild treasury."
+difficulty = "Journeyman"
+required_level = 26
+prerequisite = "q14"
+reward_xp = 3230
+reward_ds = 595
+objective = { kind = "mine", target = "minecraft:gold_ore", amount = 36 }
+
+[[quests]]
+id = "q16"
+title = "Guardian Hides"
+description = "Collect leather for frontier armor."
+difficulty = "Adept"
+required_level = 28
+prerequisite = "q15"
+reward_xp = 3660
+reward_ds = 680
+objective = { kind = "collect", target = "minecraft:leather", amount = 80 }
+
+[[quests]]
+id = "q17"
+title = "Witchlight"
+description = "Hunt witches haunting the marsh road."
+difficulty = "Adept"
+required_level = 29
+prerequisite = "q16"
+reward_xp = 4130
+reward_ds = 765
+objective = { kind = "kill", target = "minecraft:witch", amount = 18 }
+
+[[quests]]
+id = "q18"
+title = "Lapis Oath"
+description = "Mine lapis for enchanted contracts."
+difficulty = "Adept"
+required_level = 31
+prerequisite = "q17"
+reward_xp = 4620
+reward_ds = 855
+objective = { kind = "mine", target = "minecraft:lapis_ore", amount = 56 }
+
+[[quests]]
+id = "q19"
+title = "Slimebound"
+description = "Collect slimeballs for alchemical seals."
+difficulty = "Adept"
+required_level = 33
+prerequisite = "q18"
+reward_xp = 5130
+reward_ds = 950
+objective = { kind = "collect", target = "minecraft:slime_ball", amount = 48 }
+
+[[quests]]
+id = "q20"
+title = "Emerald Accord"
+description = "Mine emeralds for the mountain clans."
+difficulty = "Adept"
+required_level = 35
+prerequisite = "q19"
+reward_xp = 5680
+reward_ds = 1050
+objective = { kind = "mine", target = "minecraft:emerald_ore", amount = 20 }
+
+[[quests]]
+id = "q21"
+title = "Blaze of the South"
+description = "Defeat blazes in the Nether fortress."
+difficulty = "Veteran"
+required_level = 37
+prerequisite = "q20"
+reward_xp = 6250
+reward_ds = 1160
+objective = { kind = "kill", target = "minecraft:blaze", amount = 40 }
+
+[[quests]]
+id = "q22"
+title = "Quartz Citadel"
+description = "Mine Nether quartz for white battlements."
+difficulty = "Veteran"
+required_level = 38
+prerequisite = "q21"
+reward_xp = 6860
+reward_ds = 1270
+objective = { kind = "mine", target = "minecraft:nether_quartz_ore", amount = 160 }
+
+[[quests]]
+id = "q23"
+title = "Ghastly Requiem"
+description = "Defeat ghasts over the lava seas."
+difficulty = "Veteran"
+required_level = 40
+prerequisite = "q22"
+reward_xp = 7490
+reward_ds = 1385
+objective = { kind = "kill", target = "minecraft:ghast", amount = 20 }
+
+[[quests]]
+id = "q24"
+title = "Magma Tribute"
+description = "Collect magma cream for fireward brews."
+difficulty = "Veteran"
+required_level = 42
+prerequisite = "q23"
+reward_xp = 8140
+reward_ds = 1510
+objective = { kind = "collect", target = "minecraft:magma_cream", amount = 40 }
+
+[[quests]]
+id = "q25"
+title = "Ancient Alloy"
+description = "Mine ancient debris for the royal forge."
+difficulty = "Veteran"
+required_level = 44
+prerequisite = "q24"
+reward_xp = 8830
+reward_ds = 1635
+objective = { kind = "mine", target = "minecraft:ancient_debris", amount = 12 }
+
+[[quests]]
+id = "q26"
+title = "Blackstone Bastion"
+description = "Mine blackstone to rebuild the bastion."
+difficulty = "Elite"
+required_level = 46
+prerequisite = "q25"
+reward_xp = 9540
+reward_ds = 1770
+objective = { kind = "mine", target = "minecraft:blackstone", amount = 256 }
+
+[[quests]]
+id = "q27"
+title = "Piglin Reckoning"
+description = "Defeat piglins guarding stolen tribute."
+difficulty = "Elite"
+required_level = 47
+prerequisite = "q26"
+reward_xp = 10290
+reward_ds = 1905
+objective = { kind = "kill", target = "minecraft:piglin", amount = 65 }
+
+[[quests]]
+id = "q28"
+title = "Withered Company"
+description = "Defeat wither skeletons in the dark halls."
+difficulty = "Elite"
+required_level = 49
+prerequisite = "q27"
+reward_xp = 11060
+reward_ds = 2050
+objective = { kind = "kill", target = "minecraft:wither_skeleton", amount = 45 }
+
+[[quests]]
+id = "q29"
+title = "Tears of Return"
+description = "Collect ghast tears for resurrection rites."
+difficulty = "Elite"
+required_level = 51
+prerequisite = "q28"
+reward_xp = 11850
+reward_ds = 2200
+objective = { kind = "collect", target = "minecraft:ghast_tear", amount = 24 }
+
+[[quests]]
+id = "q30"
+title = "Nether Star Prelude"
+description = "Collect blaze rods for the final summoning."
+difficulty = "Elite"
+required_level = 53
+prerequisite = "q29"
+reward_xp = 12680
+reward_ds = 2350
+objective = { kind = "collect", target = "minecraft:blaze_rod", amount = 64 }
+
+[[quests]]
+id = "q31"
+title = "Diamond Covenant"
+description = "Mine diamonds worthy of a guildmaster."
+difficulty = "Master"
+required_level = 55
+prerequisite = "q30"
+reward_xp = 13530
+reward_ds = 2510
+objective = { kind = "mine", target = "minecraft:diamond_ore", amount = 32 }
+
+[[quests]]
+id = "q32"
+title = "Echoes Below"
+description = "Collect echo shards from ancient cities."
+difficulty = "Master"
+required_level = 56
+prerequisite = "q31"
+reward_xp = 14420
+reward_ds = 2675
+objective = { kind = "collect", target = "minecraft:echo_shard", amount = 16 }
+
+[[quests]]
+id = "q33"
+title = "Sculk Silence"
+description = "Mine sculk without waking the deep."
+difficulty = "Master"
+required_level = 58
+prerequisite = "q32"
+reward_xp = 15330
+reward_ds = 2845
+objective = { kind = "mine", target = "minecraft:sculk", amount = 320 }
+
+[[quests]]
+id = "q34"
+title = "Wardens' Warning"
+description = "Defeat wardens and survive the darkness."
+difficulty = "Master"
+required_level = 60
+prerequisite = "q33"
+reward_xp = 16260
+reward_ds = 3020
+objective = { kind = "kill", target = "minecraft:warden", amount = 2 }
+
+[[quests]]
+id = "q35"
+title = "Ocean's Tithe"
+description = "Collect prismarine crystals from drowned ruins."
+difficulty = "Master"
+required_level = 62
+prerequisite = "q34"
+reward_xp = 17230
+reward_ds = 3195
+objective = { kind = "collect", target = "minecraft:prismarine_crystals", amount = 96 }
+
+[[quests]]
+id = "q36"
+title = "Temple Breaker"
+description = "Defeat elder guardians beneath the waves."
+difficulty = "Heroic"
+required_level = 64
+prerequisite = "q35"
+reward_xp = 18220
+reward_ds = 3380
+objective = { kind = "kill", target = "minecraft:elder_guardian", amount = 6 }
+
+[[quests]]
+id = "q37"
+title = "Shells of Dominion"
+description = "Collect nautilus shells for ocean conduits."
+difficulty = "Heroic"
+required_level = 65
+prerequisite = "q36"
+reward_xp = 19250
+reward_ds = 3570
+objective = { kind = "collect", target = "minecraft:nautilus_shell", amount = 24 }
+
+[[quests]]
+id = "q38"
+title = "Raidbreaker"
+description = "Defeat pillagers marching on the realm."
+difficulty = "Heroic"
+required_level = 67
+prerequisite = "q37"
+reward_xp = 20300
+reward_ds = 3765
+objective = { kind = "kill", target = "minecraft:pillager", amount = 100 }
+
+[[quests]]
+id = "q39"
+title = "Totems of Ash"
+description = "Collect totems from fallen evokers."
+difficulty = "Heroic"
+required_level = 69
+prerequisite = "q38"
+reward_xp = 21370
+reward_ds = 3965
+objective = { kind = "collect", target = "minecraft:totem_of_undying", amount = 8 }
+
+[[quests]]
+id = "q40"
+title = "Ravager's Fall"
+description = "Defeat ravagers at the kingdom wall."
+difficulty = "Heroic"
+required_level = 71
+prerequisite = "q39"
+reward_xp = 22480
+reward_ds = 4170
+objective = { kind = "kill", target = "minecraft:ravager", amount = 16 }
+
+[[quests]]
+id = "q41"
+title = "Eyes Beyond"
+description = "Collect Eyes of Ender to pierce the veil."
+difficulty = "Mythic"
+required_level = 73
+prerequisite = "q40"
+reward_xp = 23610
+reward_ds = 4385
+objective = { kind = "collect", target = "minecraft:ender_eye", amount = 24 }
+
+[[quests]]
+id = "q42"
+title = "Endstone Causeway"
+description = "Mine end stone for the void bridge."
+difficulty = "Mythic"
+required_level = 74
+prerequisite = "q41"
+reward_xp = 24780
+reward_ds = 4600
+objective = { kind = "mine", target = "minecraft:end_stone", amount = 384 }
+
+[[quests]]
+id = "q43"
+title = "Shulker Siege"
+description = "Defeat shulkers in the outer cities."
+difficulty = "Mythic"
+required_level = 76
+prerequisite = "q42"
+reward_xp = 25970
+reward_ds = 4820
+objective = { kind = "kill", target = "minecraft:shulker", amount = 80 }
+
+[[quests]]
+id = "q44"
+title = "Wings of Legend"
+description = "Collect phantom membranes for skybound gear."
+difficulty = "Mythic"
+required_level = 78
+prerequisite = "q43"
+reward_xp = 27180
+reward_ds = 5045
+objective = { kind = "collect", target = "minecraft:phantom_membrane", amount = 96 }
+
+[[quests]]
+id = "q45"
+title = "Dragon's Breath"
+description = "Collect dragon's breath in glass vessels."
+difficulty = "Mythic"
+required_level = 80
+prerequisite = "q44"
+reward_xp = 28430
+reward_ds = 5275
+objective = { kind = "collect", target = "minecraft:dragon_breath", amount = 32 }
+
+[[quests]]
+id = "q46"
+title = "Obsidian Crown"
+description = "Mine obsidian for the sovereign's dais."
+difficulty = "Legendary"
+required_level = 82
+prerequisite = "q45"
+reward_xp = 29700
+reward_ds = 5515
+objective = { kind = "mine", target = "minecraft:obsidian", amount = 192 }
+
+[[quests]]
+id = "q47"
+title = "Netherite Regency"
+description = "Collect netherite scraps for the crown guard."
+difficulty = "Legendary"
+required_level = 83
+prerequisite = "q46"
+reward_xp = 31010
+reward_ds = 5755
+objective = { kind = "collect", target = "minecraft:netherite_scrap", amount = 24 }
+
+[[quests]]
+id = "q48"
+title = "Storm Herald"
+description = "Defeat creepers until the storm itself fears you."
+difficulty = "Legendary"
+required_level = 85
+prerequisite = "q47"
+reward_xp = 32340
+reward_ds = 6000
+objective = { kind = "kill", target = "minecraft:creeper", amount = 180 }
+
+[[quests]]
+id = "q49"
+title = "Beacon of Calabaza"
+description = "Collect nether stars for the final beacons."
+difficulty = "Legendary"
+required_level = 87
+prerequisite = "q48"
+reward_xp = 33690
+reward_ds = 6255
+objective = { kind = "collect", target = "minecraft:nether_star", amount = 3 }
+
+[[quests]]
+id = "q50"
+title = "The Dragonseed Legend"
+description = "Defeat the Ender Dragon and seal your legend."
+difficulty = "Legendary"
+required_level = 89
+prerequisite = "q49"
+reward_xp = 35080
+reward_ds = 6510
+objective = { kind = "kill", target = "minecraft:ender_dragon", amount = 3 }
+
