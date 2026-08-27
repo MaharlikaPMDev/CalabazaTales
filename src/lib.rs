@@ -573,4 +573,13 @@ mod tests {
         assert!(PERMISSION_TALES.starts_with("CalabazaTales:"));
         assert!(PERMISSION_ADMIN.starts_with("CalabazaTales:"));
     }
+
+    #[test]
+    fn java_pack_metadata_targets_resource_pack_88_0() {
+        let metadata: serde_json::Value =
+            serde_json::from_str(include_str!("../resource-pack-java/pack.mcmeta")).unwrap();
+        assert_eq!(metadata["pack"]["min_format"], serde_json::json!([88, 0]));
+        assert_eq!(metadata["pack"]["max_format"], serde_json::json!([88, 0]));
+        assert!(metadata["pack"].get("pack_format").is_none());
+    }
 }

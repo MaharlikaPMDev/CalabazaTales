@@ -2,8 +2,8 @@
 
 [resource_pack.java]
 enabled = true
-url = "https://github.com/MaharlikaPMDev/CalabazaTales/releases/download/v0.1.1/CalabazaTales-Java-26.2-v0.1.1.zip"
-sha1 = "b386b239876b2de9678a44c47ccb956162044c0f"
+url = "https://github.com/MaharlikaPMDev/CalabazaTales/releases/download/v0.1.2/CalabazaTales-Java-26.2-v0.1.2.zip"
+sha1 = "4550a975aa4ccf3002a7d9ab8899c500dcec1565"
 prompt_message = "Calabaza Tales MMORPG interface"
 force = false
 
@@ -13,9 +13,9 @@ force = false
 
 [[resource_pack.bedrock.packs]]
 uuid = "d1b80eca-85a3-4f1c-b82a-52b6145abc58"
-version = "0.1.1"
+version = "0.1.2"
 size = 8804
-download_url = "https://github.com/MaharlikaPMDev/CalabazaTales/releases/download/v0.1.1/CalabazaTales-Bedrock-v0.1.1.mcpack"
+download_url = "https://github.com/MaharlikaPMDev/CalabazaTales/releases/download/v0.1.2/CalabazaTales-Bedrock-v0.1.2.mcpack"
 content_key = ""
 sub_pack_name = ""
 content_id = ""

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2 — 2026-08-28
+
+- Fixed the Java 26.2 resource-pack metadata to use the required `min_format` and `max_format` fields with resource-pack version `[88, 0]`.
+
 ## 0.1.1 — 2026-08-28
 
 - Fixed Pumpkin permission nodes to use the required, case-sensitive `CalabazaTales:` plugin namespace.

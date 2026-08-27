@@ -23,7 +23,7 @@ CalabazaTales is an event-driven MMORPG foundation for [PumpkinMC](https://githu
 4. Install the Java ZIP as a resource pack or import the `.mcpack` in Bedrock.
 5. Run `/tales` in game.
 
-Pumpkin can also offer both packs from direct download URLs through `[resource_pack.java]` and `[resource_pack.bedrock]` in `pumpkin.toml`; a ready-to-merge example is in [`docs/pumpkin-resource-packs.toml`](docs/pumpkin-resource-packs.toml). See [Pumpkin's resource-pack configuration](https://docs.pumpkinmc.org/config/resource-pack). The Java pack uses resource-pack format `88`, the format published for Minecraft Java 26.2 in the [official 26.2 technical notes](https://feedback.minecraft.net/hc/en-us/articles/46690753273997-Minecraft-Java-Edition-26-2). The Bedrock manifest follows Microsoft's [resource-pack manifest reference](https://learn.microsoft.com/en-us/minecraft/creator/reference/content/addonsreference/packmanifest?view=minecraft-bedrock-stable).
+Pumpkin can also offer both packs from direct download URLs through `[resource_pack.java]` and `[resource_pack.bedrock]` in `pumpkin.toml`; a ready-to-merge example is in [`docs/pumpkin-resource-packs.toml`](docs/pumpkin-resource-packs.toml). See [Pumpkin's resource-pack configuration](https://docs.pumpkinmc.org/config/resource-pack). The Java pack uses resource-pack format `88.0`, the format published for Minecraft Java 26.2 in the [official 26.2 technical notes](https://feedback.minecraft.net/hc/en-us/articles/46690753273997-Minecraft-Java-Edition-26-2). The Bedrock manifest follows Microsoft's [resource-pack manifest reference](https://learn.microsoft.com/en-us/minecraft/creator/reference/content/addonsreference/packmanifest?view=minecraft-bedrock-stable).
 
 ## Commands
 
