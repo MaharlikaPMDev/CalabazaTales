@@ -1,6 +1,6 @@
 [package]
 name = "calabaza-tales"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 license = "MIT"
 description = "A fast, configurable MMORPG foundation for PumpkinMC"
@@ -21,4 +21,3 @@ lto = true
 codegen-units = 1
 opt-level = "s"
 strip = true
-

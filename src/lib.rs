@@ -22,6 +22,9 @@ use pumpkin_plugin_api::{
 };
 use std::{path::PathBuf, sync::Arc};
 
+const PERMISSION_TALES: &str = "CalabazaTales:command.tales";
+const PERMISSION_ADMIN: &str = "CalabazaTales:command.admin";
+
 struct CalabazaTales;
 
 impl Plugin for CalabazaTales {
@@ -65,13 +68,13 @@ pumpkin_plugin_api::register_plugin!(CalabazaTales);
 
 fn register_permissions(context: &Context) -> pumpkin_plugin_api::Result<()> {
     context.register_permission(&Permission {
-        node: "calabazatales.command.tales".into(),
+        node: PERMISSION_TALES.into(),
         description: "Open the CalabazaTales menus".into(),
         default: PermissionDefault::Allow,
         children: vec![],
     })?;
     context.register_permission(&Permission {
-        node: "calabazatales.command.admin".into(),
+        node: PERMISSION_ADMIN.into(),
         description: "Reload and validate CalabazaTales configuration".into(),
         default: PermissionDefault::Op(PermissionLevel::Three),
         children: vec![],
@@ -103,7 +106,7 @@ fn register_commands(context: &Context, app: Arc<App>) {
         app,
         action: CommandAction::Reload,
     }));
-    context.register_command(command, "calabazatales.command.tales");
+    context.register_command(command, PERMISSION_TALES);
 }
 
 #[derive(Clone, Copy)]
@@ -124,7 +127,7 @@ impl CommandHandler for TalesCommand {
         _args: ConsumedArgs,
     ) -> Result<i32, CommandError> {
         if matches!(self.action, CommandAction::Reload) {
-            if !sender.has_permission(&server, "calabazatales.command.admin") {
+            if !sender.has_permission(&server, PERMISSION_ADMIN) {
                 return Err(CommandError::PermissionDenied);
             }
             return match self.app.reload() {
@@ -563,5 +566,11 @@ mod tests {
     fn identifiers_are_normalized() {
         assert_eq!(normalize_id("Zombie"), "minecraft:zombie");
         assert_eq!(normalize_id("minecraft:Iron_Ore"), "minecraft:iron_ore");
+    }
+
+    #[test]
+    fn permission_nodes_use_the_exact_plugin_namespace() {
+        assert!(PERMISSION_TALES.starts_with("CalabazaTales:"));
+        assert!(PERMISSION_ADMIN.starts_with("CalabazaTales:"));
     }
 }

@@ -29,12 +29,12 @@ Pumpkin can also offer both packs from direct download URLs through `[resource_p
 
 - `/tales` or `/tales quests` — open the quest journal.
 - `/tales attributes` or `/tales stats` — open character attributes.
-- `/tales reload` — validate and reload all TOML configuration; requires `calabazatales.command.admin`.
+- `/tales reload` — validate and reload all TOML configuration; requires `CalabazaTales:command.admin`.
 
 Permissions:
 
-- `calabazatales.command.tales` — allowed by default.
-- `calabazatales.command.admin` — permission level 3 operators by default.
+- `CalabazaTales:command.tales` — allowed by default.
+- `CalabazaTales:command.admin` — permission level 3 operators by default.
 
 ## Quest authoring
 

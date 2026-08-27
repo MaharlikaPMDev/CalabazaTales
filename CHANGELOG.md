@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1 — 2026-08-28
+
+- Fixed Pumpkin permission nodes to use the required, case-sensitive `CalabazaTales:` plugin namespace.
+
 ## 0.1.0 — 2026-08-28
 
 - Added configurable X/Y/Z cuboid safe zones.
@@ -9,4 +13,3 @@
 - Added Dragon Seed (`Ds`) currency.
 - Added target health/armor boss bar.
 - Added original Java 26.2 and Bedrock MMORPG HUD packs.
-

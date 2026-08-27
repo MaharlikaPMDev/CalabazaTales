@@ -1,4 +1,4 @@
-param([string]$Version = '0.1.0')
+param([string]$Version = '0.1.1')
 
 $root = Split-Path -Parent $PSScriptRoot
 $dist = Join-Path $root 'dist'
