@@ -1,6 +1,10 @@
 use crate::{model::*, storage};
 use pumpkin_plugin_api::{Player, Server, boss_bar::BossBar, text::TextComponent};
-use std::{collections::HashMap, path::PathBuf, sync::Mutex};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+    sync::Mutex,
+};
 
 pub struct App {
     pub data_dir: PathBuf,
@@ -9,6 +13,7 @@ pub struct App {
     pub zones: Mutex<Vec<SafeZone>>,
     pub players: Mutex<HashMap<String, PlayerState>>,
     pub gui_views: Mutex<HashMap<String, MenuView>>,
+    pub gui_refresh_pending: Mutex<HashSet<String>>,
     pub bedrock_forms: Mutex<HashMap<u32, (String, MenuView)>>,
     pub spawned_types: Mutex<HashMap<i32, String>>,
     pub last_hits: Mutex<HashMap<i32, LastHit>>,
@@ -50,6 +55,7 @@ impl App {
             zones: Mutex::new(zones.zones),
             players: Mutex::new(HashMap::new()),
             gui_views: Mutex::new(HashMap::new()),
+            gui_refresh_pending: Mutex::new(HashSet::new()),
             bedrock_forms: Mutex::new(HashMap::new()),
             spawned_types: Mutex::new(HashMap::new()),
             last_hits: Mutex::new(HashMap::new()),

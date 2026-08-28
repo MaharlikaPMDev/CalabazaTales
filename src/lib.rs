@@ -18,6 +18,7 @@ use pumpkin_plugin_api::{
     forms::FormResponse,
     permission::{Permission, PermissionDefault, PermissionLevel},
     permissions,
+    scheduler::SchedulerExt,
     text::TextComponent,
 };
 use std::{path::PathBuf, sync::Arc};
@@ -195,6 +196,11 @@ impl EventHandler<PlayerLeaveEvent> for LeaveHandler {
         self.0.save(&id);
         self.0
             .gui_views
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .remove(&id);
+        self.0
+            .gui_refresh_pending
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .remove(&id);
@@ -483,7 +489,7 @@ struct ClickHandler(Arc<App>);
 impl EventHandler<InventoryClickEvent> for ClickHandler {
     fn handle(
         &self,
-        _server: Server,
+        server: Server,
         mut event: EventData<InventoryClickEvent>,
     ) -> EventData<InventoryClickEvent> {
         let id = App::player_id(&event.player);
@@ -500,7 +506,38 @@ impl EventHandler<InventoryClickEvent> for ClickHandler {
                 .is_some_and(ui::is_java_menu_item)
         {
             event.cancelled = true;
-            ui::handle_java_click(&self.0, &event.player, event.raw_slot);
+            let should_handle = self
+                .0
+                .gui_refresh_pending
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .insert(id.clone());
+            if should_handle {
+                if let Some(next_view) =
+                    ui::handle_java_click(&self.0, &event.player, event.raw_slot)
+                {
+                    let app = self.0.clone();
+                    server.schedule_delayed_task(1, move |server| {
+                        if let Some(player) = server
+                            .get_all_players()
+                            .into_iter()
+                            .find(|player| App::player_id(player) == id)
+                        {
+                            ui::open_java_view(&app, &player, next_view);
+                        }
+                        app.gui_refresh_pending
+                            .lock()
+                            .unwrap_or_else(|e| e.into_inner())
+                            .remove(&id);
+                    });
+                } else {
+                    self.0
+                        .gui_refresh_pending
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner())
+                        .remove(&id);
+                }
+            }
         }
         event
     }

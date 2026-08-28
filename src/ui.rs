@@ -274,9 +274,9 @@ pub fn open_attributes(app: &App, player: &Player) {
     }
 }
 
-pub fn handle_java_click(app: &App, player: &Player, slot: i16) {
+pub fn handle_java_click(app: &App, player: &Player, slot: i16) -> Option<MenuView> {
     if slot < 0 {
-        return;
+        return None;
     }
     let id = App::player_id(player);
     let view = app
@@ -285,30 +285,44 @@ pub fn handle_java_click(app: &App, player: &Player, slot: i16) {
         .unwrap_or_else(|e| e.into_inner())
         .get(&id)
         .copied();
-    match view {
-        Some(MenuView::Quests(page)) => match slot {
+    match view? {
+        MenuView::Quests(page) => match slot {
             0..=44 => {
                 let index = page * 45 + slot as usize;
                 player.send_system_message(
                     TextComponent::text(&app.activate_or_claim(player, index)),
                     false,
                 );
-                open_main(app, player, page);
+                Some(MenuView::Quests(page))
             }
-            45 if page > 0 => open_main(app, player, page - 1),
-            49 => open_attributes(app, player),
-            53 => open_main(app, player, page + 1),
-            _ => {}
+            45 if page > 0 => Some(MenuView::Quests(page - 1)),
+            49 => Some(MenuView::Attributes),
+            53 => Some(MenuView::Quests(page + 1)),
+            _ => None,
         },
-        Some(MenuView::Attributes) => match slot {
-            10 => spend_and_refresh(app, player, 0),
-            12 => spend_and_refresh(app, player, 1),
-            14 => spend_and_refresh(app, player, 2),
-            16 => spend_and_refresh(app, player, 3),
-            22 => open_main(app, player, 0),
-            _ => {}
+        MenuView::Attributes => match slot {
+            10 => spend_java_attribute(app, player, 0),
+            12 => spend_java_attribute(app, player, 1),
+            14 => spend_java_attribute(app, player, 2),
+            16 => spend_java_attribute(app, player, 3),
+            22 => Some(MenuView::Quests(0)),
+            _ => None,
         },
-        None => {}
+    }
+}
+
+fn spend_java_attribute(app: &App, player: &Player, index: u32) -> Option<MenuView> {
+    player.send_system_message(
+        TextComponent::text(&app.spend_attribute(player, index)),
+        false,
+    );
+    Some(MenuView::Attributes)
+}
+
+pub fn open_java_view(app: &App, player: &Player, view: MenuView) {
+    match view {
+        MenuView::Quests(page) => open_java_quests(app, player, page),
+        MenuView::Attributes => open_attributes(app, player),
     }
 }
 

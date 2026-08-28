@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4 — 2026-08-28
+
+- Deferred Java GUI refreshes until the next server tick so Pumpkin applies click cancellation to the original screen before it is replaced.
+- Coalesced rapid menu clicks to prevent overlapping refreshes and hotbar-number item desynchronization.
+
 ## 0.1.3 — 2026-08-28
 
 - Fixed a Pumpkin WASM re-entrancy deadlock that froze the server when Java players clicked items in the `/tales` GUI.
