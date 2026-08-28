@@ -1,10 +1,15 @@
 use crate::{app::App, model::MenuView};
 use pumpkin_plugin_api::{
-    ItemStack, Player, Screen, forms::SimpleFormBuilder, gui::Gui, text::TextComponent,
+    ItemStack, Player, Screen, forms::SimpleFormBuilder, gui::Gui, persistent_data::bool_tree,
+    text::TextComponent,
 };
+
+const MENU_DATA_NAMESPACE: &str = "calabaza_tales";
+const MENU_DATA_KEY: &str = "menu_item";
 
 fn menu_item(id: &str, name: String, lore: Vec<String>) -> ItemStack {
     let item = ItemStack::new(id, 1);
+    item.set_custom_data(MENU_DATA_NAMESPACE, MENU_DATA_KEY, &bool_tree(true));
     item.set_custom_name(Some(TextComponent::text(&name)));
     item.set_lore(
         lore.into_iter()
@@ -12,6 +17,10 @@ fn menu_item(id: &str, name: String, lore: Vec<String>) -> ItemStack {
             .collect(),
     );
     item
+}
+
+pub fn is_java_menu_item(item: &ItemStack) -> bool {
+    item.has_custom_data(MENU_DATA_NAMESPACE, MENU_DATA_KEY)
 }
 
 pub fn open_main(app: &App, player: &Player, page: usize) {

@@ -13,7 +13,7 @@ use pumpkin_plugin_api::{
     events::{
         BedrockFormResponseEvent, BlockBreakEvent, BlockPlaceEvent, EntityDamageByEntityEvent,
         EntityDeathEvent, EntityPickupItemEvent, EntitySpawnEvent, EventData, EventHandler,
-        EventPriority, InventoryClickEvent, InventoryCloseEvent, PlayerJoinEvent, PlayerLeaveEvent,
+        EventPriority, InventoryClickEvent, PlayerJoinEvent, PlayerLeaveEvent,
     },
     forms::FormResponse,
     permission::{Permission, PermissionDefault, PermissionLevel},
@@ -56,8 +56,9 @@ impl Plugin for CalabazaTales {
         context.register_event_handler(SpawnHandler(app.clone()), EventPriority::Normal, true)?;
         context.register_event_handler(DamageHandler(app.clone()), EventPriority::High, true)?;
         context.register_event_handler(DeathHandler(app.clone()), EventPriority::Normal, true)?;
+        // Opening the next GUI inside a click synchronously closes the current one. Registering a
+        // close handler would re-enter this locked WASM instance and deadlock Pumpkin.
         context.register_event_handler(ClickHandler(app.clone()), EventPriority::Highest, true)?;
-        context.register_event_handler(CloseHandler(app.clone()), EventPriority::Normal, true)?;
         context.register_event_handler(FormHandler(app), EventPriority::Normal, true)?;
         tracing::info!("CalabazaTales loaded with event-driven systems (no scheduler)");
         Ok(())
@@ -486,32 +487,21 @@ impl EventHandler<InventoryClickEvent> for ClickHandler {
         mut event: EventData<InventoryClickEvent>,
     ) -> EventData<InventoryClickEvent> {
         let id = App::player_id(&event.player);
-        if self
+        let has_open_view = self
             .0
             .gui_views
             .lock()
             .unwrap_or_else(|e| e.into_inner())
-            .contains_key(&id)
+            .contains_key(&id);
+        if has_open_view
+            && event
+                .clicked_item
+                .as_ref()
+                .is_some_and(ui::is_java_menu_item)
         {
             event.cancelled = true;
             ui::handle_java_click(&self.0, &event.player, event.raw_slot);
         }
-        event
-    }
-}
-
-struct CloseHandler(Arc<App>);
-impl EventHandler<InventoryCloseEvent> for CloseHandler {
-    fn handle(
-        &self,
-        _server: Server,
-        event: EventData<InventoryCloseEvent>,
-    ) -> EventData<InventoryCloseEvent> {
-        self.0
-            .gui_views
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .remove(&App::player_id(&event.player));
         event
     }
 }

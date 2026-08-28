@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3 — 2026-08-28
+
+- Fixed a Pumpkin WASM re-entrancy deadlock that froze the server when Java players clicked items in the `/tales` GUI.
+- Marked Java menu items with private custom data so stale menu state cannot intercept clicks in unrelated inventories.
+
 ## 0.1.2 — 2026-08-28
 
 - Fixed the Java 26.2 resource-pack metadata to use the required `min_format` and `max_format` fields with resource-pack version `[88, 0]`.
