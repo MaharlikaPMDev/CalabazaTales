@@ -3,7 +3,7 @@ mod model;
 mod storage;
 mod ui;
 
-use app::{App, normalize_id};
+use app::{App, UiIntent, normalize_id};
 use model::{LastHit, ObjectiveKind};
 use pumpkin_plugin_api::{
     Context, Plugin, PluginMetadata, Server,
@@ -26,11 +26,13 @@ use std::{path::PathBuf, sync::Arc};
 const PERMISSION_TALES: &str = "CalabazaTales:command.tales";
 const PERMISSION_ADMIN: &str = "CalabazaTales:command.admin";
 
-struct CalabazaTales;
+struct CalabazaTales {
+    app: Option<Arc<App>>,
+}
 
 impl Plugin for CalabazaTales {
     fn new() -> Self {
-        Self
+        Self { app: None }
     }
 
     fn metadata(&self) -> PluginMetadata {
@@ -57,12 +59,61 @@ impl Plugin for CalabazaTales {
         context.register_event_handler(SpawnHandler(app.clone()), EventPriority::Normal, true)?;
         context.register_event_handler(DamageHandler(app.clone()), EventPriority::High, true)?;
         context.register_event_handler(DeathHandler(app.clone()), EventPriority::Normal, true)?;
-        // Opening the next GUI inside a click synchronously closes the current one. Registering a
-        // close handler would re-enter this locked WASM instance and deadlock Pumpkin.
         context.register_event_handler(ClickHandler(app.clone()), EventPriority::Highest, true)?;
-        context.register_event_handler(FormHandler(app), EventPriority::Normal, true)?;
-        tracing::info!("CalabazaTales loaded with event-driven systems (no scheduler)");
+        context.register_event_handler(FormHandler(app.clone()), EventPriority::Normal, true)?;
+        let ui_app = app.clone();
+        context.schedule_repeating_task(1, 1, move |server| process_ui_intents(&ui_app, &server));
+        self.app = Some(app);
+        tracing::info!("CalabazaTales loaded with callback-safe deferred UI processing");
         Ok(())
+    }
+
+    fn handle_ipc_message(&mut self, _sender: String, message: Vec<u8>) -> Result<Vec<u8>, String> {
+        let app = self.app.as_ref().ok_or("plugin is not loaded")?;
+        let request: serde_json::Value =
+            serde_json::from_slice(&message).map_err(|e| format!("invalid request: {e}"))?;
+        if request.get("schema").and_then(serde_json::Value::as_str) != Some("calabazatales.ipc")
+            || request.get("version").and_then(serde_json::Value::as_u64) != Some(1)
+        {
+            return Err("unsupported CalabazaTales IPC schema".into());
+        }
+        let action = request
+            .get("action")
+            .and_then(serde_json::Value::as_str)
+            .ok_or("missing action")?;
+        let response = match action {
+            "capabilities" => {
+                serde_json::json!({"schema":"calabazatales.ipc","version":1,"actions":["capabilities","active_quest"]})
+            }
+            "active_quest" => {
+                let player = request
+                    .get("player")
+                    .and_then(serde_json::Value::as_str)
+                    .ok_or("missing player")?;
+                let active_state = app
+                    .players
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .get(player)
+                    .and_then(|state| {
+                        state
+                            .active
+                            .iter()
+                            .next()
+                            .map(|(id, progress)| (id.clone(), *progress))
+                    });
+                let quests = app.quests.lock().unwrap_or_else(|e| e.into_inner());
+                let active = active_state.as_ref().and_then(|(id, progress)| {
+                    quests
+                        .iter()
+                        .find(|quest| &quest.id == id)
+                        .map(|quest| (quest, *progress))
+                });
+                serde_json::json!({"schema":"calabazatales.ipc","version":1,"quest_id":active.map(|(q,_)|q.id.as_str()),"quest_name":active.map(|(q,_)|q.title.as_str()),"quest_progress":active.map(|(_,p)|p)})
+            }
+            _ => return Err("unsupported action".into()),
+        };
+        serde_json::to_vec(&response).map_err(|e| e.to_string())
     }
 }
 
@@ -200,10 +251,14 @@ impl EventHandler<PlayerLeaveEvent> for LeaveHandler {
             .unwrap_or_else(|e| e.into_inner())
             .remove(&id);
         self.0
-            .gui_refresh_pending
+            .ui_intents
             .lock()
             .unwrap_or_else(|e| e.into_inner())
-            .remove(&id);
+            .retain(|intent| match intent {
+                UiIntent::JavaClick { player_id, .. } | UiIntent::BedrockForm { player_id, .. } => {
+                    player_id != &id
+                }
+            });
         if let Some(bar) = self
             .0
             .target_bars
@@ -489,7 +544,7 @@ struct ClickHandler(Arc<App>);
 impl EventHandler<InventoryClickEvent> for ClickHandler {
     fn handle(
         &self,
-        server: Server,
+        _server: Server,
         mut event: EventData<InventoryClickEvent>,
     ) -> EventData<InventoryClickEvent> {
         let id = App::player_id(&event.player);
@@ -506,38 +561,10 @@ impl EventHandler<InventoryClickEvent> for ClickHandler {
                 .is_some_and(ui::is_java_menu_item)
         {
             event.cancelled = true;
-            let should_handle = self
-                .0
-                .gui_refresh_pending
-                .lock()
-                .unwrap_or_else(|e| e.into_inner())
-                .insert(id.clone());
-            if should_handle {
-                if let Some(next_view) =
-                    ui::handle_java_click(&self.0, &event.player, event.raw_slot)
-                {
-                    let app = self.0.clone();
-                    server.schedule_delayed_task(1, move |server| {
-                        if let Some(player) = server
-                            .get_all_players()
-                            .into_iter()
-                            .find(|player| App::player_id(player) == id)
-                        {
-                            ui::open_java_view(&app, &player, next_view);
-                        }
-                        app.gui_refresh_pending
-                            .lock()
-                            .unwrap_or_else(|e| e.into_inner())
-                            .remove(&id);
-                    });
-                } else {
-                    self.0
-                        .gui_refresh_pending
-                        .lock()
-                        .unwrap_or_else(|e| e.into_inner())
-                        .remove(&id);
-                }
-            }
+            self.0.enqueue_ui(UiIntent::JavaClick {
+                player_id: id,
+                slot: event.raw_slot,
+            });
         }
         event
     }
@@ -550,13 +577,51 @@ impl EventHandler<BedrockFormResponseEvent> for FormHandler {
         _server: Server,
         event: EventData<BedrockFormResponseEvent>,
     ) -> EventData<BedrockFormResponseEvent> {
-        ui::handle_bedrock_response(
-            &self.0,
-            &event.player,
-            event.form_id,
-            FormResponse::parse(event.response_data.clone()),
-        );
+        self.0.enqueue_ui(UiIntent::BedrockForm {
+            player_id: App::player_id(&event.player),
+            form_id: event.form_id,
+            response_data: event.response_data.clone(),
+        });
         event
+    }
+}
+
+fn process_ui_intents(app: &App, server: &Server) {
+    let intents = {
+        let mut queue = app.ui_intents.lock().unwrap_or_else(|e| e.into_inner());
+        let count = queue.len().min(64);
+        queue.drain(..count).collect::<Vec<_>>()
+    };
+    for intent in intents {
+        let player_id = match &intent {
+            UiIntent::JavaClick { player_id, .. } | UiIntent::BedrockForm { player_id, .. } => {
+                player_id
+            }
+        };
+        let Some(player) = server
+            .get_all_players()
+            .into_iter()
+            .find(|p| App::player_id(p) == *player_id)
+        else {
+            continue;
+        };
+        match intent {
+            UiIntent::JavaClick { slot, .. } => {
+                if let Some(next) = ui::handle_java_click(app, &player, slot) {
+                    ui::open_java_view(app, &player, next);
+                }
+            }
+            UiIntent::BedrockForm {
+                form_id,
+                response_data,
+                ..
+            } => ui::handle_bedrock_response(
+                app,
+                &player,
+                form_id,
+                FormResponse::parse(response_data),
+            ),
+        }
     }
 }
 

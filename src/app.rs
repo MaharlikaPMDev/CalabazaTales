@@ -1,7 +1,7 @@
 use crate::{model::*, storage};
 use pumpkin_plugin_api::{Player, Server, boss_bar::BossBar, text::TextComponent};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap, VecDeque},
     path::PathBuf,
     sync::Mutex,
 };
@@ -13,11 +13,24 @@ pub struct App {
     pub zones: Mutex<Vec<SafeZone>>,
     pub players: Mutex<HashMap<String, PlayerState>>,
     pub gui_views: Mutex<HashMap<String, MenuView>>,
-    pub gui_refresh_pending: Mutex<HashSet<String>>,
+    pub ui_intents: Mutex<VecDeque<UiIntent>>,
     pub bedrock_forms: Mutex<HashMap<u32, (String, MenuView)>>,
     pub spawned_types: Mutex<HashMap<i32, String>>,
     pub last_hits: Mutex<HashMap<i32, LastHit>>,
     pub target_bars: Mutex<HashMap<String, BossBar>>,
+}
+
+#[derive(Clone, Debug)]
+pub enum UiIntent {
+    JavaClick {
+        player_id: String,
+        slot: i16,
+    },
+    BedrockForm {
+        player_id: String,
+        form_id: u32,
+        response_data: Option<String>,
+    },
 }
 
 impl App {
@@ -55,12 +68,33 @@ impl App {
             zones: Mutex::new(zones.zones),
             players: Mutex::new(HashMap::new()),
             gui_views: Mutex::new(HashMap::new()),
-            gui_refresh_pending: Mutex::new(HashSet::new()),
+            ui_intents: Mutex::new(VecDeque::new()),
             bedrock_forms: Mutex::new(HashMap::new()),
             spawned_types: Mutex::new(HashMap::new()),
             last_hits: Mutex::new(HashMap::new()),
             target_bars: Mutex::new(HashMap::new()),
         })
+    }
+
+    pub fn enqueue_ui(&self, intent: UiIntent) {
+        let player_id = match &intent {
+            UiIntent::JavaClick { player_id, .. } | UiIntent::BedrockForm { player_id, .. } => {
+                player_id
+            }
+        };
+        let mut queue = self.ui_intents.lock().unwrap_or_else(|e| e.into_inner());
+        if queue.len() < 256
+            && !queue.iter().any(|queued| match queued {
+                UiIntent::JavaClick {
+                    player_id: queued, ..
+                }
+                | UiIntent::BedrockForm {
+                    player_id: queued, ..
+                } => queued == player_id,
+            })
+        {
+            queue.push_back(intent);
+        }
     }
 
     pub fn reload(&self) -> Result<(), String> {

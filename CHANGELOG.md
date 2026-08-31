@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.5 — 2026-09-01
+
+- Removed all quest mutation, persistence, messaging, scheduler registration, and GUI opening from Java inventory and Bedrock Form callbacks; callbacks now only enqueue bounded intents for a pre-registered tick worker.
+- Added the read-only `calabazatales.ipc` v1 `active_quest` action for CalabazaBoard and other plugins.
+
 ## 0.1.4 — 2026-08-28
 
 - Deferred Java GUI refreshes until the next server tick so Pumpkin applies click cancellation to the original screen before it is replaced.
