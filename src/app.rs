@@ -12,7 +12,6 @@ pub struct App {
     pub quests: Mutex<Vec<Quest>>,
     pub zones: Mutex<Vec<SafeZone>>,
     pub players: Mutex<HashMap<String, PlayerState>>,
-    pub gui_views: Mutex<HashMap<String, MenuView>>,
     pub ui_intents: Mutex<VecDeque<UiIntent>>,
     pub bedrock_forms: Mutex<HashMap<u32, (String, MenuView)>>,
     pub spawned_types: Mutex<HashMap<i32, String>>,
@@ -22,10 +21,6 @@ pub struct App {
 
 #[derive(Clone, Debug)]
 pub enum UiIntent {
-    JavaClick {
-        player_id: String,
-        slot: i16,
-    },
     BedrockForm {
         player_id: String,
         form_id: u32,
@@ -67,7 +62,6 @@ impl App {
             quests: Mutex::new(quests.quests),
             zones: Mutex::new(zones.zones),
             players: Mutex::new(HashMap::new()),
-            gui_views: Mutex::new(HashMap::new()),
             ui_intents: Mutex::new(VecDeque::new()),
             bedrock_forms: Mutex::new(HashMap::new()),
             spawned_types: Mutex::new(HashMap::new()),
@@ -78,17 +72,12 @@ impl App {
 
     pub fn enqueue_ui(&self, intent: UiIntent) {
         let player_id = match &intent {
-            UiIntent::JavaClick { player_id, .. } | UiIntent::BedrockForm { player_id, .. } => {
-                player_id
-            }
+            UiIntent::BedrockForm { player_id, .. } => player_id,
         };
         let mut queue = self.ui_intents.lock().unwrap_or_else(|e| e.into_inner());
         if queue.len() < 256
             && !queue.iter().any(|queued| match queued {
-                UiIntent::JavaClick {
-                    player_id: queued, ..
-                }
-                | UiIntent::BedrockForm {
+                UiIntent::BedrockForm {
                     player_id: queued, ..
                 } => queued == player_id,
             })
@@ -268,7 +257,15 @@ impl App {
         }
     }
 
-    pub fn activate_or_claim(&self, player: &Player, quest_index: usize) -> String {
+    pub fn quest_index(&self, requested: &str) -> Option<usize> {
+        self.quests
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .iter()
+            .position(|quest| quest.id.eq_ignore_ascii_case(requested))
+    }
+
+    pub fn accept_quest(&self, player: &Player, quest_index: usize) -> String {
         let id = Self::player_id(player);
         self.ensure_player(player);
         let quests = self
@@ -285,7 +282,6 @@ impl App {
             .unwrap_or_else(|e| e.into_inner())
             .quests
             .max_active;
-        let mut reward = None;
         let message;
         {
             let mut players = self.players.lock().unwrap_or_else(|e| e.into_inner());
@@ -294,16 +290,9 @@ impl App {
                 return "You have already completed that quest.".into();
             }
             if let Some(progress) = state.active.get(&quest.id).copied() {
-                if progress < quest.objective.amount {
-                    return format!("{}: {progress}/{}", quest.title, quest.objective.amount);
-                }
-                state.active.remove(&quest.id);
-                state.completed.insert(quest.id.clone());
-                state.dragon_seeds = state.dragon_seeds.saturating_add(quest.reward_ds);
-                reward = Some(quest.reward_xp);
-                message = format!(
-                    "Claimed {} — +{} XP, +{} Ds",
-                    quest.title, quest.reward_xp, quest.reward_ds
+                return format!(
+                    "{} is already active: {progress}/{}",
+                    quest.title, quest.objective.amount
                 );
             } else if state.level < quest.required_level {
                 return format!("Requires level {}.", quest.required_level);
@@ -321,10 +310,59 @@ impl App {
             }
         }
         self.save(&id);
-        if let Some(xp) = reward {
-            self.award_xp(player, xp);
-        }
         message
+    }
+
+    pub fn cancel_quest(&self, player: &Player, quest_index: usize) -> String {
+        let id = Self::player_id(player);
+        self.ensure_player(player);
+        let quests = self.quests.lock().unwrap_or_else(|e| e.into_inner());
+        let Some(quest) = quests.get(quest_index) else {
+            return "That quest no longer exists.".into();
+        };
+        let title = quest.title.clone();
+        let quest_id = quest.id.clone();
+        drop(quests);
+        let removed = self
+            .players
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .get_mut(&id)
+            .is_some_and(|state| state.active.remove(&quest_id).is_some());
+        if !removed {
+            return format!("{title} is not active.");
+        }
+        self.save(&id);
+        format!("Cancelled quest: {title}")
+    }
+
+    pub fn claim_quest(&self, player: &Player, quest_index: usize) -> String {
+        let id = Self::player_id(player);
+        self.ensure_player(player);
+        let quests = self.quests.lock().unwrap_or_else(|e| e.into_inner());
+        let Some(quest) = quests.get(quest_index).cloned() else {
+            return "That quest no longer exists.".into();
+        };
+        drop(quests);
+        {
+            let mut players = self.players.lock().unwrap_or_else(|e| e.into_inner());
+            let state = players.get_mut(&id).expect("player state exists");
+            let Some(progress) = state.active.get(&quest.id).copied() else {
+                return format!("{} is not active.", quest.title);
+            };
+            if progress < quest.objective.amount {
+                return format!("{}: {progress}/{}", quest.title, quest.objective.amount);
+            }
+            state.active.remove(&quest.id);
+            state.completed.insert(quest.id.clone());
+            state.dragon_seeds = state.dragon_seeds.saturating_add(quest.reward_ds);
+        }
+        self.save(&id);
+        self.award_xp(player, quest.reward_xp);
+        format!(
+            "Claimed {} — +{} XP, +{} Ds",
+            quest.title, quest.reward_xp, quest.reward_ds
+        )
     }
 
     pub fn spend_attribute(&self, player: &Player, index: u32) -> String {

@@ -1,27 +1,7 @@
 use crate::{app::App, model::MenuView};
-use pumpkin_plugin_api::{
-    ItemStack, Player, Screen, forms::SimpleFormBuilder, gui::Gui, persistent_data::bool_tree,
-    text::TextComponent,
-};
+use pumpkin_plugin_api::{Player, forms::SimpleFormBuilder, text::TextComponent};
 
-const MENU_DATA_NAMESPACE: &str = "calabaza_tales";
-const MENU_DATA_KEY: &str = "menu_item";
-
-fn menu_item(id: &str, name: String, lore: Vec<String>) -> ItemStack {
-    let item = ItemStack::new(id, 1);
-    item.set_custom_data(MENU_DATA_NAMESPACE, MENU_DATA_KEY, &bool_tree(true));
-    item.set_custom_name(Some(TextComponent::text(&name)));
-    item.set_lore(
-        lore.into_iter()
-            .map(|line| TextComponent::text(&line))
-            .collect(),
-    );
-    item
-}
-
-pub fn is_java_menu_item(item: &ItemStack) -> bool {
-    item.has_custom_data(MENU_DATA_NAMESPACE, MENU_DATA_KEY)
-}
+const QUESTS_PER_PAGE: usize = 10;
 
 pub fn open_main(app: &App, player: &Player, page: usize) {
     app.ensure_player(player);
@@ -37,70 +17,68 @@ fn open_java_quests(app: &App, player: &Player, page: usize) {
     let quests = app.quests.lock().unwrap_or_else(|e| e.into_inner()).clone();
     let state = app.snapshot(&id);
     let cfg = app.config.lock().unwrap_or_else(|e| e.into_inner()).clone();
-    let gui = Gui::new(
-        Screen::Generic9x6,
-        TextComponent::text(&cfg.quests.menu_title),
+    let max_page = quests.len().saturating_sub(1) / QUESTS_PER_PAGE;
+    let page = page.min(max_page);
+    player.send_system_message(
+        TextComponent::from_legacy_string(&format!(
+            "§6§l{} §r§7({}/{})",
+            cfg.quests.menu_title,
+            page + 1,
+            max_page + 1
+        )),
+        false,
     );
-    gui.set_allow_grab_items(false);
-    gui.set_allow_put_items(false);
-    let start = page * 45;
-    for (slot, quest) in quests.iter().skip(start).take(45).enumerate() {
+    player.send_system_message(
+        TextComponent::from_legacy_string(&format!(
+            "§7Level {} • {} {} • {} attribute points",
+            state.level, state.dragon_seeds, cfg.currency.symbol, state.unspent_points
+        )),
+        false,
+    );
+    for quest in quests
+        .iter()
+        .skip(page * QUESTS_PER_PAGE)
+        .take(QUESTS_PER_PAGE)
+    {
         let progress = state.active.get(&quest.id).copied().unwrap_or(0);
-        let (icon, status) = if state.completed.contains(&quest.id) {
-            ("minecraft:lime_dye", "COMPLETED")
-        } else if state.active.contains_key(&quest.id) && progress >= quest.objective.amount {
-            ("minecraft:emerald", "READY TO CLAIM")
-        } else if state.active.contains_key(&quest.id) {
-            ("minecraft:writable_book", "ACTIVE")
-        } else if state.level < quest.required_level {
-            ("minecraft:gray_dye", "LEVEL LOCKED")
+        let unlocked = state.completed.contains(&quest.id)
+            || state.active.contains_key(&quest.id)
+            || (state.level >= quest.required_level
+                && quest
+                    .prerequisite
+                    .as_ref()
+                    .is_none_or(|required| state.completed.contains(required)));
+        let status = quest_status(&state, quest, progress);
+        let text = if unlocked {
+            format!("§f[{}] §7{} • {status}", quest.title, quest.difficulty)
         } else {
-            ("minecraft:book", "AVAILABLE")
+            format!("§8[{}] {} • {status}", quest.title, quest.difficulty)
         };
-        gui.set_item(
-            slot as u32,
-            menu_item(
-                icon,
-                format!("{} [{}]", quest.title, quest.difficulty),
-                vec![
-                    quest.description.clone(),
-                    format!("Objective: {} / {}", progress, quest.objective.amount),
-                    format!("Requires level: {}", quest.required_level),
-                    format!(
-                        "Reward: {} XP + {} {}",
-                        quest.reward_xp, quest.reward_ds, cfg.currency.symbol
-                    ),
-                    format!("Status: {status}"),
-                    "Click to accept, inspect, or claim.".into(),
-                ],
-            ),
-        );
+        let mut line = TextComponent::from_legacy_string(&text);
+        if unlocked {
+            line = line
+                .click_run_command(&format!("/tales quest {}", quest.id))
+                .hover_show_text(TextComponent::text("Click to view quest details"));
+        }
+        player.send_system_message(line, false);
     }
+    let mut navigation = TextComponent::text("");
     if page > 0 {
-        gui.set_item(
-            45,
-            menu_item("minecraft:arrow", "Previous Page".into(), vec![]),
+        navigation = navigation.add_child(
+            TextComponent::from_legacy_string("§e[Previous]")
+                .click_run_command(&format!("/tales page {}", page)),
         );
     }
-    gui.set_item(
-        49,
-        menu_item(
-            "minecraft:nether_star",
-            "Character Attributes".into(),
-            vec![format!(
-                "Level {} • {} {}",
-                state.level, state.dragon_seeds, cfg.currency.symbol
-            )],
-        ),
+    navigation = navigation.add_child(
+        TextComponent::from_legacy_string(" §b[Attributes]").click_run_command("/tales attributes"),
     );
-    if start + 45 < quests.len() {
-        gui.set_item(53, menu_item("minecraft:arrow", "Next Page".into(), vec![]));
+    if page < max_page {
+        navigation = navigation.add_child(
+            TextComponent::from_legacy_string(" §e[Next]")
+                .click_run_command(&format!("/tales page {}", page + 2)),
+        );
     }
-    app.gui_views
-        .lock()
-        .unwrap_or_else(|e| e.into_inner())
-        .insert(id, MenuView::Quests(page));
-    player.open_gui(gui);
+    player.send_system_message(navigation, false);
 }
 
 fn open_bedrock_quests(
@@ -120,22 +98,15 @@ fn open_bedrock_quests(
             state.level, state.dragon_seeds, cfg.currency.symbol, state.unspent_points
         )),
     );
-    let start = page * 10;
-    for quest in quests.iter().skip(start).take(10) {
+    let start = page * QUESTS_PER_PAGE;
+    for quest in quests.iter().skip(start).take(QUESTS_PER_PAGE) {
         let progress = state.active.get(&quest.id).copied().unwrap_or(0);
-        let status = if state.completed.contains(&quest.id) {
-            "✓"
-        } else if progress >= quest.objective.amount && state.active.contains_key(&quest.id) {
-            "★"
-        } else if state.active.contains_key(&quest.id) {
-            "◈"
-        } else {
-            "◇"
-        };
         form = form.button(
             TextComponent::text(&format!(
-                "{status} {}\n{progress}/{} • {} XP • {} Ds",
-                quest.title, quest.objective.amount, quest.reward_xp, quest.reward_ds
+                "{}\n{} • {progress}/{}",
+                quest.title,
+                quest_status(&state, quest, progress),
+                quest.objective.amount
             )),
             None,
         );
@@ -144,7 +115,7 @@ fn open_bedrock_quests(
     if page > 0 {
         form = form.button(TextComponent::text("Previous Page"), None);
     }
-    if start + 10 < quests.len() {
+    if start + QUESTS_PER_PAGE < quests.len() {
         form = form.button(TextComponent::text("Next Page"), None);
     }
     let form_id = bedrock.open_form(form.build());
@@ -152,6 +123,97 @@ fn open_bedrock_quests(
         .lock()
         .unwrap_or_else(|e| e.into_inner())
         .insert(form_id, (id, MenuView::Quests(page)));
+}
+
+pub fn open_quest_detail(app: &App, player: &Player, index: usize, page: usize) {
+    app.ensure_player(player);
+    let id = App::player_id(player);
+    let quests = app.quests.lock().unwrap_or_else(|e| e.into_inner()).clone();
+    let Some(quest) = quests.get(index) else {
+        player.send_system_message(TextComponent::text("That quest no longer exists."), false);
+        return;
+    };
+    let state = app.snapshot(&id);
+    let progress = state.active.get(&quest.id).copied().unwrap_or(0);
+    let cfg = app.config.lock().unwrap_or_else(|e| e.into_inner()).clone();
+    let details = format!(
+        "{}\n\n{}\n\nDifficulty: {}\nObjective: {:?} {} — {progress}/{}\nRequired level: {}\nReward: {} XP + {} {}\nStatus: {}",
+        quest.title,
+        quest.description,
+        quest.difficulty,
+        quest.objective.kind,
+        quest.objective.target,
+        quest.objective.amount,
+        quest.required_level,
+        quest.reward_xp,
+        quest.reward_ds,
+        cfg.currency.symbol,
+        quest_status(&state, quest, progress)
+    );
+    if let Some(bedrock) = player.as_bedrock() {
+        let mut form = SimpleFormBuilder::new(
+            TextComponent::text(&quest.title),
+            TextComponent::text(&details),
+        );
+        if state.active.contains_key(&quest.id) {
+            if progress >= quest.objective.amount {
+                form = form.button(TextComponent::text("Claim Reward"), None);
+            } else {
+                form = form.button(TextComponent::text("Cancel Quest"), None);
+            }
+        } else if quest_is_unlocked(&state, quest) && !state.completed.contains(&quest.id) {
+            form = form.button(TextComponent::text("Accept Quest"), None);
+        }
+        form = form.button(TextComponent::text("Back"), None);
+        let form_id = bedrock.open_form(form.build());
+        app.bedrock_forms
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .insert(form_id, (id, MenuView::QuestDetail { page, index }));
+        return;
+    }
+
+    player.send_system_message(
+        TextComponent::from_legacy_string(&format!("§6§l{}", quest.title)),
+        false,
+    );
+    for line in details.lines().skip(1) {
+        if !line.is_empty() {
+            player.send_system_message(
+                TextComponent::from_legacy_string(&format!("§7{line}")),
+                false,
+            );
+        }
+    }
+    let mut actions = TextComponent::text("");
+    if state.active.contains_key(&quest.id) {
+        if progress >= quest.objective.amount {
+            actions = actions.add_child(
+                TextComponent::from_legacy_string("§a[Claim Reward]")
+                    .click_run_command(&format!("/tales claim {}", quest.id)),
+            );
+        } else {
+            actions = actions.add_child(
+                TextComponent::from_legacy_string("§c[Cancel Quest]")
+                    .click_run_command(&format!("/tales cancel {}", quest.id)),
+            );
+        }
+    } else if quest_is_unlocked(&state, quest) && !state.completed.contains(&quest.id) {
+        actions = actions
+            .add_child(
+                TextComponent::from_legacy_string("§a[Accept]")
+                    .click_run_command(&format!("/tales accept {}", quest.id)),
+            )
+            .add_child(
+                TextComponent::from_legacy_string(" §c[Decline]")
+                    .click_run_command(&format!("/tales page {}", page + 1)),
+            );
+    }
+    actions = actions.add_child(
+        TextComponent::from_legacy_string(" §e[Back]")
+            .click_run_command(&format!("/tales page {}", page + 1)),
+    );
+    player.send_system_message(actions, false);
 }
 
 pub fn open_attributes(app: &App, player: &Player) {
@@ -173,35 +235,19 @@ pub fn open_attributes(app: &App, player: &Player) {
             )),
         )
         .button(
-            TextComponent::text(&format!(
-                "⚔ Damage {}\n+{:.1}% outgoing damage",
-                state.attributes.damage,
-                state.attributes.damage as f32 * cfg.attributes.damage_per_point * 100.0
-            )),
+            TextComponent::text(&format!("Damage {}", state.attributes.damage)),
             None,
         )
         .button(
-            TextComponent::text(&format!(
-                "🛡 Defense {}\n-{:.1}% incoming damage",
-                state.attributes.defense,
-                state.attributes.defense as f32 * cfg.attributes.defense_per_point * 100.0
-            )),
+            TextComponent::text(&format!("Defense {}", state.attributes.defense)),
             None,
         )
         .button(
-            TextComponent::text(&format!(
-                "➤ Speed {}\n+{:.1}% movement",
-                state.attributes.speed,
-                state.attributes.speed as f32 * cfg.attributes.speed_per_point * 100.0
-            )),
+            TextComponent::text(&format!("Speed {}", state.attributes.speed)),
             None,
         )
         .button(
-            TextComponent::text(&format!(
-                "❤ Vitality {}\n+{:.1} max health",
-                state.attributes.vitality,
-                state.attributes.vitality as f32 * cfg.attributes.health_per_point
-            )),
+            TextComponent::text(&format!("Vitality {}", state.attributes.vitality)),
             None,
         )
         .button(TextComponent::text("Back to Quest Journal"), None)
@@ -211,119 +257,37 @@ pub fn open_attributes(app: &App, player: &Player) {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .insert(form_id, (id, MenuView::Attributes));
-    } else {
-        let gui = Gui::new(
-            Screen::Generic9x3,
-            TextComponent::text(&cfg.quests.attributes_title),
-        );
-        gui.set_allow_grab_items(false);
-        gui.set_allow_put_items(false);
-        gui.set_item(
-            4,
-            menu_item(
-                "minecraft:nether_star",
-                format!("Level {}", state.level),
-                vec![
-                    format!("XP: {}/{}", state.xp, app.xp_needed(state.level)),
-                    format!("Balance: {} {}", state.dragon_seeds, cfg.currency.symbol),
-                    format!("Unspent points: {}", state.unspent_points),
-                ],
-            ),
-        );
-        gui.set_item(
-            10,
-            menu_item(
-                "minecraft:iron_sword",
-                format!("Damage • {}", state.attributes.damage),
-                vec!["Click to spend 1 point.".into()],
-            ),
-        );
-        gui.set_item(
-            12,
-            menu_item(
-                "minecraft:shield",
-                format!("Defense • {}", state.attributes.defense),
-                vec!["Click to spend 1 point.".into()],
-            ),
-        );
-        gui.set_item(
-            14,
-            menu_item(
-                "minecraft:rabbit_foot",
-                format!("Speed • {}", state.attributes.speed),
-                vec!["Click to spend 1 point.".into()],
-            ),
-        );
-        gui.set_item(
-            16,
-            menu_item(
-                "minecraft:glistering_melon_slice",
-                format!("Vitality • {}", state.attributes.vitality),
-                vec!["Click to spend 1 point.".into()],
-            ),
-        );
-        gui.set_item(
-            22,
-            menu_item("minecraft:book", "Back to Quest Journal".into(), vec![]),
-        );
-        app.gui_views
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .insert(id, MenuView::Attributes);
-        player.open_gui(gui);
+        return;
     }
-}
-
-pub fn handle_java_click(app: &App, player: &Player, slot: i16) -> Option<MenuView> {
-    if slot < 0 {
-        return None;
-    }
-    let id = App::player_id(player);
-    let view = app
-        .gui_views
-        .lock()
-        .unwrap_or_else(|e| e.into_inner())
-        .get(&id)
-        .copied();
-    match view? {
-        MenuView::Quests(page) => match slot {
-            0..=44 => {
-                let index = page * 45 + slot as usize;
-                player.send_system_message(
-                    TextComponent::text(&app.activate_or_claim(player, index)),
-                    false,
-                );
-                Some(MenuView::Quests(page))
-            }
-            45 if page > 0 => Some(MenuView::Quests(page - 1)),
-            49 => Some(MenuView::Attributes),
-            53 => Some(MenuView::Quests(page + 1)),
-            _ => None,
-        },
-        MenuView::Attributes => match slot {
-            10 => spend_java_attribute(app, player, 0),
-            12 => spend_java_attribute(app, player, 1),
-            14 => spend_java_attribute(app, player, 2),
-            16 => spend_java_attribute(app, player, 3),
-            22 => Some(MenuView::Quests(0)),
-            _ => None,
-        },
-    }
-}
-
-fn spend_java_attribute(app: &App, player: &Player, index: u32) -> Option<MenuView> {
     player.send_system_message(
-        TextComponent::text(&app.spend_attribute(player, index)),
+        TextComponent::from_legacy_string(&format!(
+            "§6§l{} §r§7• Level {} • XP {}/{} • {} points",
+            cfg.quests.attributes_title,
+            state.level,
+            state.xp,
+            app.xp_needed(state.level),
+            state.unspent_points
+        )),
         false,
     );
-    Some(MenuView::Attributes)
-}
-
-pub fn open_java_view(app: &App, player: &Player, view: MenuView) {
-    match view {
-        MenuView::Quests(page) => open_java_quests(app, player, page),
-        MenuView::Attributes => open_attributes(app, player),
+    for (index, label, value) in [
+        (0, "Damage", state.attributes.damage),
+        (1, "Defense", state.attributes.defense),
+        (2, "Speed", state.attributes.speed),
+        (3, "Vitality", state.attributes.vitality),
+    ] {
+        player.send_system_message(
+            TextComponent::from_legacy_string(&format!(
+                "§b[{label} {value}] §7Click to spend 1 point"
+            ))
+            .click_run_command(&format!("/tales spend {index}")),
+            false,
+        );
     }
+    player.send_system_message(
+        TextComponent::from_legacy_string("§e[Back to Quest Journal]").click_run_command("/tales"),
+        false,
+    );
 }
 
 fn spend_and_refresh(app: &App, player: &Player, index: u32) {
@@ -357,14 +321,12 @@ pub fn handle_bedrock_response(
     match view {
         MenuView::Quests(page) => {
             let quests_len = app.quests.lock().unwrap_or_else(|e| e.into_inner()).len();
-            let page_count = quests_len.saturating_sub(page * 10).min(10);
+            let page_count = quests_len
+                .saturating_sub(page * QUESTS_PER_PAGE)
+                .min(QUESTS_PER_PAGE);
             let button = button as usize;
             if button < page_count {
-                player.send_system_message(
-                    TextComponent::text(&app.activate_or_claim(player, page * 10 + button)),
-                    false,
-                );
-                open_main(app, player, page);
+                open_quest_detail(app, player, page * QUESTS_PER_PAGE + button, page);
             } else if button == page_count {
                 open_attributes(app, player);
             } else {
@@ -376,9 +338,36 @@ pub fn handle_bedrock_response(
                     }
                     cursor += 1;
                 }
-                if page * 10 + 10 < quests_len && button == cursor {
+                if page * QUESTS_PER_PAGE + QUESTS_PER_PAGE < quests_len && button == cursor {
                     open_main(app, player, page + 1);
                 }
+            }
+        }
+        MenuView::QuestDetail { page, index } => {
+            let quests = app.quests.lock().unwrap_or_else(|e| e.into_inner()).clone();
+            let Some(quest) = quests.get(index) else {
+                open_main(app, player, page);
+                return;
+            };
+            let state = app.snapshot(&App::player_id(player));
+            let progress = state.active.get(&quest.id).copied().unwrap_or(0);
+            let has_action = (state.active.contains_key(&quest.id)
+                || (quest_is_unlocked(&state, quest) && !state.completed.contains(&quest.id)))
+                && !state.completed.contains(&quest.id);
+            if button == 0 && has_action {
+                let message = if state.active.contains_key(&quest.id) {
+                    if progress >= quest.objective.amount {
+                        app.claim_quest(player, index)
+                    } else {
+                        app.cancel_quest(player, index)
+                    }
+                } else {
+                    app.accept_quest(player, index)
+                };
+                player.send_system_message(TextComponent::text(&message), false);
+                open_quest_detail(app, player, index, page);
+            } else {
+                open_main(app, player, page);
             }
         }
         MenuView::Attributes => match button {
@@ -386,5 +375,31 @@ pub fn handle_bedrock_response(
             4 => open_main(app, player, 0),
             _ => {}
         },
+    }
+}
+
+fn quest_is_unlocked(state: &crate::model::PlayerState, quest: &crate::model::Quest) -> bool {
+    state.level >= quest.required_level
+        && quest
+            .prerequisite
+            .as_ref()
+            .is_none_or(|required| state.completed.contains(required))
+}
+
+fn quest_status(
+    state: &crate::model::PlayerState,
+    quest: &crate::model::Quest,
+    progress: u64,
+) -> &'static str {
+    if state.completed.contains(&quest.id) {
+        "COMPLETED"
+    } else if state.active.contains_key(&quest.id) && progress >= quest.objective.amount {
+        "READY TO CLAIM"
+    } else if state.active.contains_key(&quest.id) {
+        "ACTIVE"
+    } else if quest_is_unlocked(state, quest) {
+        "AVAILABLE"
+    } else {
+        "LOCKED"
     }
 }

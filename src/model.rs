@@ -152,6 +152,7 @@ impl Default for PlayerState {
 #[derive(Clone, Copy, Debug)]
 pub enum MenuView {
     Quests(usize),
+    QuestDetail { page: usize, index: usize },
     Attributes,
 }
 

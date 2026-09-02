@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.7 — 2026-09-02
+
+- Replaced the Java inventory UI with white unlocked and dark-gray locked clickable quest links, quest details, and explicit Accept, Decline, Cancel, and Claim actions.
+- Added Bedrock quest-detail forms with edition-native action buttons instead of immediately mutating a quest from the list.
+- Converted the Java attributes inventory to clickable chat controls.
+
 ## 0.1.6 — 2026-09-02
 
 - Rebuilt against the current Pumpkin plugin API ABI used by Pumpkin 0.1.0-dev+26.2-26.40, fixing `handle-event` export type checking during plugin initialization.

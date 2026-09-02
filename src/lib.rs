@@ -8,12 +8,15 @@ use model::{LastHit, ObjectiveKind};
 use pumpkin_plugin_api::{
     Context, Plugin, PluginMetadata, Server,
     boss_bar::{BossBar, BossBarColor, BossBarDivision},
-    command::{Command, CommandError, CommandNode, CommandSender, ConsumedArgs},
+    command::{
+        Arg, ArgumentType, Command, CommandError, CommandNode, CommandSender, ConsumedArgs,
+        StringType,
+    },
     commands::CommandHandler,
     events::{
         BedrockFormResponseEvent, BlockBreakEvent, BlockPlaceEvent, EntityDamageByEntityEvent,
         EntityDeathEvent, EntityPickupItemEvent, EntitySpawnEvent, EventData, EventHandler,
-        EventPriority, InventoryClickEvent, PlayerJoinEvent, PlayerLeaveEvent,
+        EventPriority, PlayerJoinEvent, PlayerLeaveEvent,
     },
     forms::FormResponse,
     permission::{Permission, PermissionDefault, PermissionLevel},
@@ -59,7 +62,6 @@ impl Plugin for CalabazaTales {
         context.register_event_handler(SpawnHandler(app.clone()), EventPriority::Normal, true)?;
         context.register_event_handler(DamageHandler(app.clone()), EventPriority::High, true)?;
         context.register_event_handler(DeathHandler(app.clone()), EventPriority::Normal, true)?;
-        context.register_event_handler(ClickHandler(app.clone()), EventPriority::Highest, true)?;
         context.register_event_handler(FormHandler(app.clone()), EventPriority::Normal, true)?;
         let ui_app = app.clone();
         context.schedule_repeating_task(1, 1, move |server| process_ui_intents(&ui_app, &server));
@@ -139,47 +141,33 @@ fn register_commands(context: &Context, app: Arc<App>) {
         &["tales".into(), "quests".into(), "attributes".into()],
         "Open CalabazaTales quests and character progression.",
     )
-    .execute(TalesCommand {
-        app: app.clone(),
-        action: CommandAction::Quests,
-    })
-    .then(CommandNode::literal("quests").execute(TalesCommand {
-        app: app.clone(),
-        action: CommandAction::Quests,
-    }))
-    .then(CommandNode::literal("attributes").execute(TalesCommand {
-        app: app.clone(),
-        action: CommandAction::Attributes,
-    }))
-    .then(CommandNode::literal("stats").execute(TalesCommand {
-        app: app.clone(),
-        action: CommandAction::Attributes,
-    }))
-    .then(CommandNode::literal("reload").execute(TalesCommand {
-        app,
-        action: CommandAction::Reload,
-    }));
+    .execute(TalesCommand { app: app.clone() })
+    .then(
+        CommandNode::argument("input", &ArgumentType::String(StringType::Greedy))
+            .execute(TalesCommand { app }),
+    );
     context.register_command(command, PERMISSION_TALES);
 }
 
-#[derive(Clone, Copy)]
-enum CommandAction {
-    Quests,
-    Attributes,
-    Reload,
-}
 struct TalesCommand {
     app: Arc<App>,
-    action: CommandAction,
 }
 impl CommandHandler for TalesCommand {
     fn handle(
         &self,
         sender: CommandSender,
         server: Server,
-        _args: ConsumedArgs,
+        args: ConsumedArgs,
     ) -> Result<i32, CommandError> {
-        if matches!(self.action, CommandAction::Reload) {
+        let input = match args.get_value("input") {
+            Arg::Simple(value) | Arg::Msg(value) => value,
+            _ => String::new(),
+        };
+        let words = input.split_whitespace().collect::<Vec<_>>();
+        if words
+            .first()
+            .is_some_and(|word| word.eq_ignore_ascii_case("reload"))
+        {
             if !sender.has_permission(&server, PERMISSION_ADMIN) {
                 return Err(CommandError::PermissionDenied);
             }
@@ -198,10 +186,47 @@ impl CommandHandler for TalesCommand {
                 "This menu can only be opened by a player.",
             )));
         };
-        match self.action {
-            CommandAction::Quests => ui::open_main(&self.app, &player, 0),
-            CommandAction::Attributes => ui::open_attributes(&self.app, &player),
-            CommandAction::Reload => unreachable!(),
+        match words.as_slice() {
+            [] | ["quests"] => ui::open_main(&self.app, &player, 0),
+            ["attributes"] | ["stats"] => ui::open_attributes(&self.app, &player),
+            ["page", raw] => {
+                let page = raw.parse::<usize>().unwrap_or(1).max(1) - 1;
+                ui::open_main(&self.app, &player, page);
+            }
+            ["quest", id] => {
+                let Some(index) = self.app.quest_index(id) else {
+                    return Err(CommandError::CommandFailed(TextComponent::text(
+                        "Unknown quest.",
+                    )));
+                };
+                ui::open_quest_detail(&self.app, &player, index, index / 10);
+            }
+            [action @ ("accept" | "cancel" | "claim"), id] => {
+                let Some(index) = self.app.quest_index(id) else {
+                    return Err(CommandError::CommandFailed(TextComponent::text(
+                        "Unknown quest.",
+                    )));
+                };
+                let message = match *action {
+                    "accept" => self.app.accept_quest(&player, index),
+                    "cancel" => self.app.cancel_quest(&player, index),
+                    "claim" => self.app.claim_quest(&player, index),
+                    _ => unreachable!(),
+                };
+                player.send_system_message(TextComponent::text(&message), false);
+                ui::open_quest_detail(&self.app, &player, index, index / 10);
+            }
+            ["spend", raw] => {
+                let index = raw.parse::<u32>().unwrap_or(u32::MAX);
+                let message = self.app.spend_attribute(&player, index);
+                player.send_system_message(TextComponent::text(&message), false);
+                ui::open_attributes(&self.app, &player);
+            }
+            _ => {
+                return Err(CommandError::CommandFailed(TextComponent::text(
+                    "Usage: /tales, /tales attributes, or use the clickable quest links.",
+                )));
+            }
         }
         Ok(1)
     }
@@ -246,18 +271,11 @@ impl EventHandler<PlayerLeaveEvent> for LeaveHandler {
         let id = App::player_id(&event.player);
         self.0.save(&id);
         self.0
-            .gui_views
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .remove(&id);
-        self.0
             .ui_intents
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .retain(|intent| match intent {
-                UiIntent::JavaClick { player_id, .. } | UiIntent::BedrockForm { player_id, .. } => {
-                    player_id != &id
-                }
+                UiIntent::BedrockForm { player_id, .. } => player_id != &id,
             });
         if let Some(bar) = self
             .0
@@ -540,36 +558,6 @@ impl EventHandler<EntityDeathEvent> for DeathHandler {
     }
 }
 
-struct ClickHandler(Arc<App>);
-impl EventHandler<InventoryClickEvent> for ClickHandler {
-    fn handle(
-        &self,
-        _server: Server,
-        mut event: EventData<InventoryClickEvent>,
-    ) -> EventData<InventoryClickEvent> {
-        let id = App::player_id(&event.player);
-        let has_open_view = self
-            .0
-            .gui_views
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .contains_key(&id);
-        if has_open_view
-            && event
-                .clicked_item
-                .as_ref()
-                .is_some_and(ui::is_java_menu_item)
-        {
-            event.cancelled = true;
-            self.0.enqueue_ui(UiIntent::JavaClick {
-                player_id: id,
-                slot: event.raw_slot,
-            });
-        }
-        event
-    }
-}
-
 struct FormHandler(Arc<App>);
 impl EventHandler<BedrockFormResponseEvent> for FormHandler {
     fn handle(
@@ -594,9 +582,7 @@ fn process_ui_intents(app: &App, server: &Server) {
     };
     for intent in intents {
         let player_id = match &intent {
-            UiIntent::JavaClick { player_id, .. } | UiIntent::BedrockForm { player_id, .. } => {
-                player_id
-            }
+            UiIntent::BedrockForm { player_id, .. } => player_id,
         };
         let Some(player) = server
             .get_all_players()
@@ -606,11 +592,6 @@ fn process_ui_intents(app: &App, server: &Server) {
             continue;
         };
         match intent {
-            UiIntent::JavaClick { slot, .. } => {
-                if let Some(next) = ui::handle_java_click(app, &player, slot) {
-                    ui::open_java_view(app, &player, next);
-                }
-            }
             UiIntent::BedrockForm {
                 form_id,
                 response_data,
