@@ -1,6 +1,6 @@
 [package]
 name = "calabaza-tales"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2024"
 license = "MIT"
 description = "A fast, configurable MMORPG foundation for PumpkinMC"
@@ -10,7 +10,7 @@ repository = "https://github.com/MaharlikaPMDev/CalabazaTales"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-pumpkin-plugin-api = { git = "https://github.com/Pumpkin-MC/Pumpkin", rev = "37437ee0a013f3d8a776227516be151f5a490b4c", package = "pumpkin-plugin-api" }
+pumpkin-plugin-api = { git = "https://github.com/Pumpkin-MC/Pumpkin", rev = "c01ddb7b65b0be9641eb2273740ce8e1a04b7807", package = "pumpkin-plugin-api" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 toml = "0.9"

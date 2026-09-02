@@ -31,7 +31,7 @@ checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
 name = "calabaza-tales"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "pumpkin-plugin-api",
  "serde",
@@ -214,7 +214,7 @@ dependencies = [
 [[package]]
 name = "pumpkin-plugin-api"
 version = "0.1.0"
-source = "git+https://github.com/Pumpkin-MC/Pumpkin?rev=37437ee0a013f3d8a776227516be151f5a490b4c#37437ee0a013f3d8a776227516be151f5a490b4c"
+source = "git+https://github.com/Pumpkin-MC/Pumpkin?rev=c01ddb7b65b0be9641eb2273740ce8e1a04b7807#c01ddb7b65b0be9641eb2273740ce8e1a04b7807"
 dependencies = [
  "postcard",
  "serde_json",

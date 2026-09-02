@@ -2,6 +2,8 @@
 
 CalabazaTales is an event-driven MMORPG foundation for [PumpkinMC](https://github.com/Pumpkin-MC/Pumpkin). It ships as a Rust/WASM plugin plus original Java and Bedrock resource packs with a dark steel, gold, crimson, and sapphire medieval-anime HUD.
 
+Version 0.1.6 targets the Pumpkin plugin ABI used by Pumpkin 0.1.0-dev+26.2-26.40.
+
 > **Work in progress:** the current resource packs provide functional vanilla HUD artwork. The full Sword Art Online-style animated HUD requires a separate client-side Java mod; a server plugin/resource pack cannot inject arbitrary dynamic HUD layout into an unmodified client. Bedrock clients will use the supported Bedrock UI/resource-pack fallback.
 
 ![Calabaza Tales HUD concept](art/source/hud-concept.png)

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.6 — 2026-09-02
+
+- Rebuilt against the current Pumpkin plugin API ABI used by Pumpkin 0.1.0-dev+26.2-26.40, fixing `handle-event` export type checking during plugin initialization.
+
 ## 0.1.5 — 2026-09-01
 
 - Removed all quest mutation, persistence, messaging, scheduler registration, and GUI opening from Java inventory and Bedrock Form callbacks; callbacks now only enqueue bounded intents for a pre-registered tick worker.
